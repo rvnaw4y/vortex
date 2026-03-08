@@ -1,0 +1,57 @@
+* { box-sizing: border-box; }
+body, html {
+    margin: 0; padding: 0; height: 100%;
+    background-color: #0b0b0b; color: white;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+}
+
+#browser-wrapper {
+    display: flex; flex-direction: column; height: 100vh;
+}
+
+#custombutton {
+	background: none; border: none; padding: 0;
+	cursor: pointer; display: flex; align-items: center;
+}
+
+#navbar {
+    display: flex; align-items: center;
+    background: #151515; padding: 10px 20px;
+    border-bottom: 1px solid #252525; gap: 20px;
+}
+
+.logo-section { display: flex; align-items: center; gap: 10px; }
+.logo-section h1 { font-size: 1.2rem; margin: 0; font-weight: 700; color: #eee; }
+.nav-logo { height: 24px; }
+
+#sj-form { flex: 1; max-width: 900px; margin: 0 auto; }
+.input-group { display: flex; width: 100%; }
+
+#sj-address {
+    flex: 1; background: #202020; border: 1px solid #333;
+    border-radius: 8px 0 0 8px; padding: 10px 15px;
+    color: white; outline: none; transition: 0.2s;
+}
+
+#sj-address:focus { border-color: #444; background: #252525; }
+
+button {
+    background: #333; color: white; border: 1px solid #333;
+    padding: 0 20px; border-radius: 0 8px 8px 0;
+    cursor: pointer; font-weight: 600;
+}
+
+button:hover { background: #444; }
+
+#frame-container { flex: 1; position: relative; background: #000; }
+
+/* Styling the Scramjet-generated iframe */
+#sj-frame {
+    width: 100%; height: 100%; border: none; background: white;
+}
+
+#landing-state {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; text-align: center; color: #555;
+}

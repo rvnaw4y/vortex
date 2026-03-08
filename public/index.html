@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>Vortex | RD</title>
+
+    <script src="/scram/scramjet.all.js"></script>
+    <script src="/baremux/index.js"></script>
+    
+    <link rel="stylesheet" href="index.css" />
+
+    <script src="search.js"></script>
+    <script src="register-sw.js" defer></script>
+    <script src="index.js" defer></script>
+</head>
+
+<body>
+    <div id="browser-wrapper">
+        <header id="navbar">
+            <div class="logo-section">
+			<button id="custombutton" onclick="goHome();">
+			    <h1>Vortex</h1>
+			</button>
+			</div>
+
+            <form id="sj-form">
+                <input
+                    id="sj-search-engine"
+                    value="https://www.google.com/search?q=%s"
+                    type="hidden"
+                />
+                <div class="input-group">
+                    <input id="sj-address" type="text" placeholder="Search the web freely" autocomplete="off" />
+                    <button type="submit">Go</button>
+                </div>
+            </form>
+        </header>
+
+        <main id="frame-container">
+            <div id="landing-state">
+                <div class="welcome-content">
+                    <h2>Welcome to Vortex</h2>
+                    <p>Enter a URL or search term in the bar above to begin browsing.</p>
+                </div>
+            </div>
+        </main>
+
+        <div id="error-display">
+            <p id="sj-error"></p>
+            <pre id="sj-error-code"></pre>
+        </div>
+    </div>
+</body>
+</html>
