@@ -1,6 +1,7 @@
-import { createServer } from "node:http"; // Using HTTP for development
+import { createServer as createHttpsServer } from "node:https";
+import { createServer as createHttpServer } from "node:http";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "url";
-import { hostname } from "node:os";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
@@ -19,18 +20,18 @@ Object.assign(wisp.options, {
     dns_servers: ["1.1.1.1", "1.0.0.1"],
 });
 
-// No SSL for development
-// const sslOptions = {
-//     cert: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/fullchain.pem"),
-//     key: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/privkey.pem")
-// };
+// SSL Configuration for Oracle/DuckDNS
+const sslOptions = {
+    cert: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/fullchain.pem"),
+    key: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/privkey.pem")
+};
 
 const fastify = Fastify({
     serverFactory: (handler) => {
-        // We create the HTTP server
-        return createServer()
+        // Create HTTPS Server with your certs
+        return createHttpsServer(sslOptions)
             .on("request", (req, res) => {
-                // These headers are MANDATORY for Scramjet to work
+                // MANDATORY headers for Scramjet Service Worker
                 res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
                 res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
                 handler(req, res);
@@ -43,39 +44,25 @@ const fastify = Fastify({
 });
 
 // Static file serving
-fastify.register(fastifyStatic, {
-    root: publicPath,
-    decorateReply: true,
-});
-
-fastify.register(fastifyStatic, {
-    root: scramjetPath,
-    prefix: "/scram/",
-    decorateReply: false,
-});
-
-fastify.register(fastifyStatic, {
-    root: libcurlPath,
-    prefix: "/libcurl/",
-    decorateReply: false,
-});
-
-fastify.register(fastifyStatic, {
-    root: baremuxPath,
-    prefix: "/baremux/",
-    decorateReply: false,
-});
+fastify.register(fastifyStatic, { root: publicPath, decorateReply: true });
+fastify.register(fastifyStatic, { root: scramjetPath, prefix: "/scram/", decorateReply: false });
+fastify.register(fastifyStatic, { root: libcurlPath, prefix: "/libcurl/", decorateReply: false });
+fastify.register(fastifyStatic, { root: baremuxPath, prefix: "/baremux/", decorateReply: false });
 
 fastify.setNotFoundHandler((res, reply) => {
     return reply.code(404).type("text/html").sendFile("404.html");
 });
 
+// HTTP to HTTPS Redirector (Optional but highly recommended)
+createHttpServer((req, res) => {
+    res.writeHead(301, { "Location": `https://${req.headers.host}${req.url}` });
+    res.end();
+}).listen(80);
+
 fastify.server.on("listening", () => {
-    const address = fastify.server.address();
     console.log("-----------------------------------------");
-    console.log("Vortex Proxy is LIVE");
-    console.log(`URL: http://localhost:${address.port}`);
-    console.log(`Port: ${address.port}`);
+    console.log("Vortex Proxy is SECURE and LIVE");
+    console.log("URL: https://vortexunblocker.duckdns.org");
     console.log("-----------------------------------------");
 });
 
@@ -83,16 +70,12 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown() {
-    console.log("SIGTERM signal received: closing HTTPS server");
     fastify.close();
     process.exit(0);
 }
 
-// Default to port 8080 for HTTP
-let port = parseInt(process.env.PORT || "");
-if (isNaN(port)) port = 8080;
-
+// Oracle uses 443 for HTTPS
 fastify.listen({
-    port: port,
-    host: process.env.HOST || "localhost",
+    port: 443,
+    host: "0.0.0.0", // Listen on all network interfaces
 });
