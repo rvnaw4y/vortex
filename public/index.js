@@ -5,7 +5,7 @@ const address = document.getElementById("sj-address");
 const searchEngine = document.getElementById("sj-search-engine");
 const error = document.getElementById("sj-error");
 const errorCode = document.getElementById("sj-error-code");
-const container = document.getElementById("frame-container"); // NEW: Target container
+const container = document.getElementById("frame-container");
 
 const { ScramjetController } = $scramjetLoadController();
 
@@ -15,11 +15,94 @@ const scramjet = new ScramjetController({
         all: "/scram/scramjet.all.js",
         sync: "/scram/scramjet.sync.js",
     },
+    flags: {
+        "serviceworkers": true,
+        "syncxhr": true,
+        "strictRewrites": false,
+        "rewriterLogs": false,
+        "captureErrors": true,
+        "cleanErrors": true,
+        "scramitize": false,
+        "sourceMaps": false,
+        "destructurizeRewrites": false,
+        "interceptDownloads": false,
+        "allowInvalidJs": true,
+        "allowFailedIntercepts": true,
+        "sslVerify": false
+    }
 });
 
 scramjet.init();
 
 const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+
+let currentFrame = null;
+
+// --- Internal Navigation Logic ---
+
+async function launchUrl(targetUrl) {
+    try {
+        // Ensure Service Worker is ready
+        await registerSW();
+
+        // Setup Wisp Transport
+        let wispUrl =
+            (location.protocol === "https:" ? "wss" : "ws") +
+            "://" +
+            location.host +
+            "/wisp/";
+            
+        await connection.setTransport("/libcurl/index.mjs", [
+            { websocket: wispUrl },
+        ]);
+
+        // Clear landing state
+        container.innerHTML = "";
+
+        // Create the Proxy Frame
+        const frame = scramjet.createFrame();
+        frame.frame.id = "sj-frame";
+        container.appendChild(frame.frame); 
+        
+        currentFrame = frame;
+        forceSingleTab(frame);
+        
+        // Go to the encoded URL
+        frame.go(targetUrl);
+        
+        // Update input field to show the "clean" URL
+        address.value = targetUrl;
+
+    } catch (err) {
+        error.textContent = "Failed to launch proxy.";
+        errorCode.textContent = err.toString();
+        console.error(err);
+    }
+}
+
+// --- App Popup Logic ---
+
+function toggleApps() {
+    const modal = document.getElementById("apps-modal");
+    if (!modal) return;
+    modal.style.display = (modal.style.display === "block") ? "none" : "block";
+}
+
+// Global click listener to close modal
+window.addEventListener("click", (event) => {
+    const modal = document.getElementById("apps-modal");
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+});
+
+// Updated openApp to use the existing scramjet instance
+async function openApp(url) {
+    toggleApps(); // Close the modal
+    await launchUrl(url); // Launch via the frame logic
+}
+
+// --- Browser-like Functions ---
 
 function goHome() {
     container.innerHTML = `
@@ -30,63 +113,69 @@ function goHome() {
             </div>
         </div>`;
     address.value = ""; 
+    currentFrame = null;
 }
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
-
-    try {
-        await registerSW();
-    } catch (err) {
-        error.textContent = "Failed to register service worker.";
-        errorCode.textContent = err.toString();
-        throw err;
-    }
-
     const url = search(address.value, searchEngine.value);
-
-    let wispUrl =
-        (location.protocol === "https:" ? "wss" : "ws") +
-        "://" +
-        location.host +
-        "/wisp/";
-        
-    if ((await connection.getTransport()) !== "/libcurl/index.mjs") {
-        await connection.setTransport("/libcurl/index.mjs", [
-            { websocket: wispUrl },
-        ]);
-    }
-
-    // Clear previous frames if the user searches again
-    container.innerHTML = "";
-
-    const frame = scramjet.createFrame();
-    frame.frame.id = "sj-frame";
-    
-    // CHANGE: Append to container instead of document.body
-    container.appendChild(frame.frame); 
-    
-// ... your existing code ...
-    frame.go(url);
-
-    // NEW: Update the address bar when the site changes
-    frame.frame.addEventListener('load', () => {
-        try {
-            const currentPath = frame.frame.contentWindow.location.pathname;
-            
-            // Scramjet usually stores the encoded URL after the prefix (e.g., /search/ENCODED_URL)
-            // We need to strip the prefix to get the encoded part
-            const encodedPart = currentPath.split('/search/')[1]; 
-            
-            if (encodedPart) {
-                // Decode the URL so it looks normal (e.g., https://google.com)
-                const decodedUrl = scramjet.decodeUrl(encodedPart);
-                address.value = decodedUrl;
-            }
-        } catch (e) {
-            // This might fail due to Cross-Origin restrictions on some sites, 
-            // but Scramjet usually handles this via the service worker.
-            console.error("Could not update address bar:", e);
-        }
-    });
+    await launchUrl(url);
 });
+
+// --- Tab & Navigation Guards ---
+
+function installTopLevelSingleTabGuards() {
+    window.open = (url) => openInCurrentFrame(url) || null;
+    document.addEventListener("click", (event) => {
+        const link = event.target?.closest?.("a[href]");
+        if (!link || !currentFrame) return;
+        const href = link.getAttribute("href");
+        if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+        event.preventDefault();
+        currentFrame.go(link.href);
+    }, true);
+}
+
+function openInCurrentFrame(url, fallbackBase = window.location.href) {
+    if (!currentFrame) return null;
+    try {
+        const target = url ? new URL(String(url), fallbackBase).toString() : fallbackBase;
+        currentFrame.go(target);
+        return currentFrame.frame.contentWindow || window;
+    } catch { return null; }
+}
+
+function forceSingleTab(frame) {
+    const apply = () => {
+        const win = frame.frame.contentWindow;
+        const doc = frame.frame.contentDocument;
+        if (!win || !doc) return;
+        win.open = (url) => {
+            frame.go(url ? new URL(url, win.location.href).toString() : win.location.href);
+            return win;
+        };
+    };
+    frame.frame.addEventListener("load", apply);
+}
+
+installTopLevelSingleTabGuards();
+
+function goBack() {
+    if (currentFrame) {
+        const win = currentFrame.frame.contentWindow;
+        if (win) win.history.back();
+    }
+}
+
+function goForward() {
+    if (currentFrame) {
+        const win = currentFrame.frame.contentWindow;
+        if (win) win.history.forward();
+    }
+}
+
+function refresh() {
+    if (currentFrame) {
+        currentFrame.go(currentFrame.frame.contentWindow.location.href);
+    }
+}

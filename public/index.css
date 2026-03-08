@@ -6,52 +6,78 @@ body, html {
     overflow: hidden;
 }
 
-#browser-wrapper {
-    display: flex; flex-direction: column; height: 100vh;
-}
-
-#custombutton {
-	background: none; border: none; padding: 0;
-	cursor: pointer; display: flex; align-items: center;
-}
+#browser-wrapper { display: flex; flex-direction: column; height: 100vh; }
 
 #navbar {
-    display: flex; align-items: center;
+    display: flex; align-items: center; justify-content: space-between;
     background: #151515; padding: 10px 20px;
-    border-bottom: 1px solid #252525; gap: 20px;
+    border-bottom: 1px solid #252525; height: 60px;
+    position: relative;
 }
 
-.logo-section { display: flex; align-items: center; gap: 10px; }
-.logo-section h1 { font-size: 1.2rem; margin: 0; font-weight: 700; color: #eee; }
-.nav-logo { height: 24px; }
+.nav-left-group { display: flex; align-items: center; gap: 15px; z-index: 2; }
 
-#sj-form { flex: 1; max-width: 900px; margin: 0 auto; }
+#custombutton { background: none; border: none; cursor: pointer; color: white; }
+#custombutton h1 { font-size: 1.2rem; margin: 0; font-weight: 700; }
+
+.nav-buttons { display: flex; gap: 5px; }
+.nav-buttons button {
+    background: #333; color: white; border: 1px solid #333;
+    padding: 0; border-radius: 8px; cursor: pointer;
+    width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+}
+
+/* CENTERED SEARCH BAR */
+#sj-form {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 45%; max-width: 600px; z-index: 1;
+}
 .input-group { display: flex; width: 100%; }
-
 #sj-address {
     flex: 1; background: #202020; border: 1px solid #333;
     border-radius: 8px 0 0 8px; padding: 10px 15px;
-    color: white; outline: none; transition: 0.2s;
+    color: white; outline: none;
 }
-
-#sj-address:focus { border-color: #444; background: #252525; }
-
-button {
+#sj-form button {
     background: #333; color: white; border: 1px solid #333;
-    padding: 0 20px; border-radius: 0 8px 8px 0;
-    cursor: pointer; font-weight: 600;
+    padding: 0 15px; border-radius: 0 8px 8px 0; cursor: pointer;
 }
 
-button:hover { background: #444; }
-
-#frame-container { flex: 1; position: relative; background: #000; }
-
-/* Styling the Scramjet-generated iframe */
-#sj-frame {
-    width: 100%; height: 100%; border: none; background: white;
-}
-
-#landing-state {
+/* APPS BUTTON */
+#apps-btn {
+    background: #333; color: white; border: 1px solid #333;
+    width: 50px; height: 35px; border-radius: 8px;
+    cursor: pointer; font-size: 0.7rem; z-index: 2;
     display: flex; align-items: center; justify-content: center;
-    height: 100%; text-align: center; color: #555;
 }
+
+/* MODAL & GRID */
+.modal {
+    display: none; position: fixed; z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+}
+.modal-content {
+    background: #121212; margin: 10% auto; padding: 30px;
+    border: 1px solid #333; width: 80%; max-width: 600px;
+    border-radius: 15px; text-align: center; position: relative;
+}
+.close-btn { position: absolute; right: 20px; top: 15px; color: #aaa; font-size: 28px; cursor: pointer; }
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 20px; margin-top: 20px; }
+.app-card {
+    background: #1c1c1c; padding: 15px; border-radius: 12px;
+    cursor: pointer; transition: 0.3s; display: flex;
+    flex-direction: column; align-items: center; gap: 10px; border: 1px solid transparent;
+}
+.app-card:hover { background: #252525; border-color: #5865F2; transform: translateY(-5px); }
+.app-card img { width: 40px; height: 40px; object-fit: contain; }
+.app-card span { font-size: 0.8rem; font-weight: 500; }
+
+/* MORE SOON CARD */
+.more-soon-card { background: #151515 !important; border: 1px dashed #333 !important; opacity: 0.6; cursor: default !important; }
+.plus-icon { font-size: 2rem; color: #444; height: 40px; display: flex; align-items: center; }
+.more-soon-card span { color: #444; }
+
+#frame-container { flex: 1; background: #000; position: relative; }
+#sj-frame { width: 100%; height: 100%; border: none; background: white; }
+#landing-state { display: flex; align-items: center; justify-content: center; height: 100%; color: #555; }
