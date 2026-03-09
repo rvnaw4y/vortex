@@ -20,10 +20,10 @@ Object.assign(wisp.options, {
     dns_servers: ["1.1.1.1", "1.0.0.1"],
 });
 
-// SSL Configuration for Oracle/DuckDNS
+// SSL Configuration for all Haven.best subdomains
 const sslOptions = {
-    cert: readFileSync("/etc/letsencrypt/live/vortex.haven.best/fullchain.pem"),
-    key: readFileSync("/etc/letsencrypt/live/vortex.haven.best/privkey.pem")
+    cert: readFileSync("/etc/letsencrypt/live/haven.best/fullchain.pem"),
+    key: readFileSync("/etc/letsencrypt/live/haven.best/privkey.pem")
 };
 
 const fastify = Fastify({
