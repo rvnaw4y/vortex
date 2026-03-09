@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vortex Admin | Announcements</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0b0b0b;
+            color: #fff;
+            font-family: Inter, system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            width: min(760px, 100%);
+            background: #121212;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 24px;
+        }
+        h1 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+        }
+        p.note {
+            margin: 0 0 18px;
+            color: #aaa;
+            font-size: 0.92rem;
+        }
+        form {
+            display: grid;
+            gap: 12px;
+        }
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 0.9rem;
+            color: #d5d5d5;
+        }
+        input, textarea {
+            width: 100%;
+            background: #1d1d1d;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+        }
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        button {
+            border: 1px solid #3a3a3a;
+            background: #2f2f2f;
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button.secondary {
+            background: #1f1f1f;
+        }
+        .status {
+            min-height: 22px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .status.ok { color: #78d98f; }
+        .status.err { color: #ff8a8a; }
+        .preview {
+            margin-top: 18px;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 16px;
+        }
+        .preview h2 {
+            margin: 0 0 8px;
+            font-size: 1.05rem;
+        }
+        .preview pre {
+            background: #181818;
+            border: 1px solid #2f2f2f;
+            border-radius: 10px;
+            padding: 10px 12px;
+            white-space: pre-wrap;
+            margin: 6px 0;
+            font-family: inherit;
+        }
+        .preview a {
+            color: #8ab4ff;
+            text-decoration: none;
+        }
+        .users {
+            margin-top: 22px;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 16px;
+        }
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .users h2 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+        #client-count {
+            color: #d8d8d8;
+            font-size: 0.92rem;
+        }
+        .users table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .users th, .users td {
+            border-bottom: 1px solid #2a2a2a;
+            padding: 9px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .users th {
+            color: #bdbdbd;
+            font-weight: 600;
+        }
+        .users code {
+            word-break: break-all;
+            color: #f2f2f2;
+            font-size: 0.78rem;
+        }
+        .mini-input {
+            width: 170px;
+            background: #1b1b1b;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            padding: 7px 9px;
+            font-size: 0.78rem;
+        }
+        .mini-btn {
+            border: 1px solid #3a3a3a;
+            background: #2b2b2b;
+            color: #fff;
+            border-radius: 8px;
+            padding: 7px 9px;
+            cursor: pointer;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+        .mini-btn.secondary {
+            background: #1f1f1f;
+        }
+        .client-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #clients-empty {
+            color: #9f9f9f;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 720px) {
+            .row { grid-template-columns: 1fr; }
+            .mini-input {
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="admin.js" defer></script>
+</head>
+<body>
+    <main class="card">
+        <h1>Announcement Admin</h1>
+        <p class="note">Set `VORTEX_ADMIN_KEY` (or `ADMIN_KEY`) on the server before using this page.</p>
+
+        <form id="announcement-form">
+            <label>
+                Admin key
+                <input id="admin-key" type="password" autocomplete="off" required />
+            </label>
+            <label>
+                Title
+                <input id="announcement-title" maxlength="120" required />
+            </label>
+            <label>
+                Message
+                <textarea id="announcement-message" maxlength="4000" required></textarea>
+            </label>
+
+            <div class="row">
+                <label>
+                    Link text (optional)
+                    <input id="announcement-link-text" maxlength="40" />
+                </label>
+                <label>
+                    Link URL (optional, https://...)
+                    <input id="announcement-link-url" maxlength="1200" />
+                </label>
+            </div>
+
+            <div class="actions">
+                <button type="submit">Publish Announcement</button>
+                <button class="secondary" type="button" id="clear-btn">Clear Current</button>
+            </div>
+        </form>
+
+        <div id="status" class="status" aria-live="polite"></div>
+
+        <section class="preview" id="preview">
+            <h2>Current Announcement</h2>
+            <div id="preview-empty">No active announcement.</div>
+            <div id="preview-content" hidden>
+                <strong id="preview-title"></strong>
+                <pre id="preview-message"></pre>
+                <a id="preview-link" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+            </div>
+        </section>
+
+        <section class="users" id="users">
+            <div class="users-header">
+                <h2>Connected Users</h2>
+                <div>
+                    <span id="client-count">0 connected</span>
+                    <button class="secondary" type="button" id="refresh-clients-btn">Refresh</button>
+                </div>
+            </div>
+            <div id="clients-empty">No active users.</div>
+            <table id="clients-table" hidden>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Network</th>
+                        <th>Seen</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-body"></tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>
