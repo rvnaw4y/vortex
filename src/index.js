@@ -28,10 +28,10 @@ const sslOptions = {
 
 const fastify = Fastify({
     serverFactory: (handler) => {
-        // Create HTTPS Server with your certs
         return createHttpsServer(sslOptions)
             .on("request", (req, res) => {
-                // MANDATORY headers for Scramjet Service Worker
+                // Add these headers to bypass the "Forbidden" issues
+                res.setHeader("Access-Control-Allow-Origin", "*");
                 res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
                 res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
                 handler(req, res);
