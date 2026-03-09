@@ -16,7 +16,7 @@ const scramjet = new ScramjetController({
         sync: "/scram/scramjet.sync.js",
     },
     flags: {
-        "serviceworkers": true,
+        "serviceworkers": false,
         "syncxhr": true,
         "strictRewrites": false,
         "rewriterLogs": false,
