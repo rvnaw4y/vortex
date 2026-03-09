@@ -37,24 +37,13 @@ scramjet.init();
 const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
 let currentFrame = null;
+let proxyBootPromise = null;
 
 // --- Internal Navigation Logic ---
 
 async function launchUrl(targetUrl) {
     try {
-        // Ensure Service Worker is ready
-        await registerSW();
-
-        // Setup Wisp Transport
-        let wispUrl =
-            (location.protocol === "https:" ? "wss" : "ws") +
-            "://" +
-            location.host +
-            "/wisp/";
-            
-        await connection.setTransport("/libcurl/index.mjs", [
-            { websocket: wispUrl },
-        ]);
+        await ensureProxyBoot();
 
         // Clear landing state
         container.innerHTML = "";
@@ -68,7 +57,7 @@ async function launchUrl(targetUrl) {
         forceSingleTab(frame);
         
         // Go to the encoded URL
-        frame.go(targetUrl);
+        await frame.go(targetUrl);
         
         // Update input field to show the "clean" URL
         address.value = targetUrl;
@@ -77,6 +66,31 @@ async function launchUrl(targetUrl) {
         error.textContent = "Failed to launch proxy.";
         errorCode.textContent = err.toString();
         console.error(err);
+    }
+}
+
+async function ensureProxyBoot() {
+    if (!proxyBootPromise) {
+        proxyBootPromise = (async () => {
+            await registerSW();
+
+            const wispUrl =
+                (location.protocol === "https:" ? "wss" : "ws") +
+                "://" +
+                location.host +
+                "/wisp/";
+
+            await connection.setTransport("/libcurl/index.mjs", [
+                { websocket: wispUrl },
+            ]);
+        })();
+    }
+
+    try {
+        await proxyBootPromise;
+    } catch (err) {
+        proxyBootPromise = null;
+        throw err;
     }
 }
 

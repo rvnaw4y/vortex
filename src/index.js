@@ -28,14 +28,7 @@ const sslOptions = {
 
 const fastify = Fastify({
     serverFactory: (handler) => {
-        return createHttpsServer(sslOptions)
-            .on("request", (req, res) => {
-                // Add these headers to bypass the "Forbidden" issues
-                res.setHeader("Access-Control-Allow-Origin", "*");
-                res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-                res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-                handler(req, res);
-            })
+        return createHttpsServer(sslOptions, handler)
             .on("upgrade", (req, socket, head) => {
                 if (req.url.endsWith("/wisp/")) wisp.routeRequest(req, socket, head);
                 else socket.end();
