@@ -20,6 +20,7 @@ const clientsTable = document.getElementById("clients-table");
 const clientsBody = document.getElementById("clients-body");
 const clientsEmpty = document.getElementById("clients-empty");
 const clientCount = document.getElementById("client-count");
+const adminKeyStorageKey = "vortex:admin-key";
 
 function setStatus(message, ok) {
     statusEl.textContent = message;
@@ -276,8 +277,20 @@ form.addEventListener("submit", publishAnnouncement);
 clearBtn.addEventListener("click", clearAnnouncement);
 refreshClientsBtn.addEventListener("click", loadClients);
 
-adminKeyInput.addEventListener("change", loadClients);
+adminKeyInput.addEventListener("input", () => {
+    try {
+        localStorage.setItem(adminKeyStorageKey, adminKeyInput.value.trim());
+    } catch {}
+    loadClients();
+});
 setInterval(loadClients, 5000);
+
+try {
+    const storedKey = localStorage.getItem(adminKeyStorageKey) || "";
+    if (storedKey) {
+        adminKeyInput.value = storedKey;
+    }
+} catch {}
 
 loadCurrentAnnouncement();
 loadClients();

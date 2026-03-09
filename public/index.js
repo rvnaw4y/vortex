@@ -48,10 +48,12 @@ let currentFrame = null;
 let proxyBootPromise = null;
 const seenAnnouncementStorageKey = "vortex:last-seen-announcement-id";
 const clientIdStorageKey = "vortex:client-id";
+const clientIdCookieName = "vortex_client_id";
 const heartbeatIntervalMs = 15000;
 let statusStream = null;
 let heartbeatTimer = null;
 let blockedByAdmin = false;
+let blockGuardsInstalled = false;
 const clientId = getOrCreateClientId();
 
 // --- Internal Navigation Logic ---
@@ -153,22 +155,67 @@ function goHome() {
     currentFrame = null;
 }
 
+function getCookie(name) {
+    const escaped = String(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = document.cookie.match(
+        new RegExp(`(?:^|;\\s*)${escaped}=([^;]*)`)
+    );
+    return match ? decodeURIComponent(match[1]) : "";
+}
+
+function getCookieDomainSuffix() {
+    const host = window.location.hostname;
+    if (!host || host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+        return "";
+    }
+
+    const parts = host.split(".");
+    if (parts.length < 2) return "";
+    const root = parts.slice(-2).join(".");
+    return `;domain=.${root}`;
+}
+
+function persistClientId(clientIdValue) {
+    const safeId = String(clientIdValue || "");
+    if (!isValidClientId(safeId)) return;
+
+    try {
+        localStorage.setItem(clientIdStorageKey, safeId);
+    } catch {}
+
+    let cookie = `${clientIdCookieName}=${encodeURIComponent(
+        safeId
+    )};path=/;max-age=31536000;samesite=lax`;
+    if (window.location.protocol === "https:") {
+        cookie += ";secure";
+    }
+    cookie += getCookieDomainSuffix();
+    document.cookie = cookie;
+}
+
 function getOrCreateClientId() {
+    const cookieId = getCookie(clientIdCookieName);
+    if (isValidClientId(cookieId)) {
+        persistClientId(cookieId);
+        return cookieId;
+    }
+
     try {
         const existing = localStorage.getItem(clientIdStorageKey);
-        if (isValidClientId(existing)) return existing;
+        if (isValidClientId(existing)) {
+            persistClientId(existing);
+            return existing;
+        }
     } catch {}
 
     const generated = createClientId();
-    try {
-        localStorage.setItem(clientIdStorageKey, generated);
-    } catch {}
+    persistClientId(generated);
     return generated;
 }
 
 function createClientId() {
-    if (crypto?.randomUUID) {
-        return crypto.randomUUID().replace(/-/g, "_");
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID().replace(/-/g, "_");
     }
     return `client_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 }
@@ -179,6 +226,8 @@ function isValidClientId(value) {
 
 function setBlockedState(blocked, reason) {
     blockedByAdmin = Boolean(blocked);
+    ensureBlockGuards();
+
     if (blockedByAdmin) {
         const message = reason
             ? `Sorry, you have been blocked by admin.\nReason: ${reason}`
@@ -187,12 +236,63 @@ function setBlockedState(blocked, reason) {
     }
 
     document.body.classList.toggle("user-blocked", blockedByAdmin);
+    setUiBlocked(blockedByAdmin);
 
     if (blockedByAdmin) {
         const appsModal = document.getElementById("apps-modal");
         if (appsModal) appsModal.style.display = "none";
         if (announcementModal) announcementModal.style.display = "none";
+        currentFrame = null;
+        container.innerHTML = "";
+    } else if (!currentFrame && !container.querySelector("#landing-state")) {
+        goHome();
     }
+}
+
+function setUiBlocked(blocked) {
+    const controls = document.querySelectorAll(
+        "#sj-address, #apps-btn, #back-btn, #forward-btn, #refresh-btn, #sj-form button[type='submit']"
+    );
+    for (const control of controls) {
+        if ("disabled" in control) {
+            control.disabled = blocked;
+        }
+    }
+}
+
+function ensureBlockGuards() {
+    if (blockGuardsInstalled) return;
+
+    const guard = (event) => {
+        if (!blockedByAdmin) return;
+        if (blockOverlay && event.target && blockOverlay.contains(event.target)) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") {
+            event.stopImmediatePropagation();
+        }
+    };
+
+    const events = [
+        "click",
+        "submit",
+        "keydown",
+        "keypress",
+        "keyup",
+        "input",
+        "change",
+        "pointerdown",
+        "mousedown",
+        "touchstart",
+    ];
+
+    for (const eventName of events) {
+        window.addEventListener(eventName, guard, true);
+    }
+
+    blockGuardsInstalled = true;
 }
 
 function parseStreamData(event) {

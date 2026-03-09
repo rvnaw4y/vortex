@@ -116,6 +116,7 @@ body, html {
     justify-content: center;
     text-align: center;
     padding: 24px;
+    pointer-events: all;
 }
 
 #admin-block-overlay .overlay-inner {
@@ -135,6 +136,14 @@ body, html {
 
 body.user-blocked #admin-block-overlay {
     display: flex;
+}
+
+body.user-blocked #browser-wrapper > *:not(#admin-block-overlay) {
+    visibility: hidden;
+}
+
+body.user-blocked #admin-block-overlay {
+    visibility: visible;
 }
 
 #frame-container { flex: 1; background: #000; position: relative; }
