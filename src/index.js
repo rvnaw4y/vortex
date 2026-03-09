@@ -22,8 +22,8 @@ Object.assign(wisp.options, {
 
 // SSL Configuration for Oracle/DuckDNS
 const sslOptions = {
-    cert: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/fullchain.pem"),
-    key: readFileSync("/etc/letsencrypt/live/vortexunblocker.duckdns.org/privkey.pem")
+    cert: readFileSync("/etc/letsencrypt/live/vortex.haven.best/fullchain.pem"),
+    key: readFileSync("/etc/letsencrypt/live/vortex.haven.best/privkey.pem")
 };
 
 const fastify = Fastify({
