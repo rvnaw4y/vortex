@@ -16,7 +16,8 @@ const publicPath = fileURLToPath(new URL("../public/", import.meta.url));
 const adminStatePath = fileURLToPath(
     new URL("../data/admin-state.json", import.meta.url)
 );
-const adminKey = process.env.VORTEX_ADMIN_KEY || process.env.ADMIN_KEY || "";
+const envPath = fileURLToPath(new URL("../.env", import.meta.url));
+const envLocalPath = fileURLToPath(new URL("../.env.local", import.meta.url));
 const activeClientWindowMs = 45_000;
 
 const liveClients = new Map();
@@ -27,6 +28,42 @@ let adminStateCache = {
     announcement: null,
     blockedClients: {},
 };
+
+function loadEnvFromFile(path) {
+    let content = "";
+    try {
+        content = readFileSync(path, "utf8");
+    } catch {
+        return;
+    }
+
+    const lines = content.split(/\r?\n/);
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith("#")) continue;
+
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex <= 0) continue;
+
+        const key = line.slice(0, separatorIndex).trim();
+        if (!key || process.env[key] !== undefined) continue;
+
+        let value = line.slice(separatorIndex + 1).trim();
+        const isQuoted =
+            (value.startsWith("\"") && value.endsWith("\"")) ||
+            (value.startsWith("'") && value.endsWith("'"));
+        if (isQuoted) {
+            value = value.slice(1, -1);
+        }
+
+        process.env[key] = value;
+    }
+}
+
+loadEnvFromFile(envPath);
+loadEnvFromFile(envLocalPath);
+
+const adminKey = process.env.VORTEX_ADMIN_KEY || process.env.ADMIN_KEY || "";
 
 // Wisp Configuration
 logging.set_level(logging.NONE);
