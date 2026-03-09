@@ -82,8 +82,16 @@ async function launchUrl(targetUrl) {
         address.value = targetUrl;
 
     } catch (err) {
-        error.textContent = "Failed to launch proxy.";
-        errorCode.textContent = err.toString();
+        const details = String(err);
+        if (details.includes("error code 7")) {
+            error.textContent =
+                "The proxy server could not connect to the target site from its own network.";
+            errorCode.textContent =
+                "libcurl code 7 (connect failed). This is usually upstream blocking, datacenter IP filtering, or outbound firewall/routing issues on the server.";
+        } else {
+            error.textContent = "Failed to launch proxy.";
+            errorCode.textContent = details;
+        }
         console.error(err);
     }
 }

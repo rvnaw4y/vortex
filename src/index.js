@@ -64,13 +64,23 @@ loadEnvFromFile(envPath);
 loadEnvFromFile(envLocalPath);
 
 const adminKey = process.env.VORTEX_ADMIN_KEY || process.env.ADMIN_KEY || "";
+const wispDnsServers = (
+    process.env.WISP_DNS_SERVERS || "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4"
+)
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 
 // Wisp Configuration
 logging.set_level(logging.NONE);
 Object.assign(wisp.options, {
     allow_udp_streams: false,
+    allow_tcp_streams: true,
     hostname_blacklist: [/example\.com/],
-    dns_servers: ["1.1.1.1", "1.0.0.1"],
+    dns_method: "resolve",
+    dns_result_order: "ipv4first",
+    dns_ttl: 300,
+    dns_servers: wispDnsServers,
 });
 
 // SSL Configuration for all Haven.best subdomains
